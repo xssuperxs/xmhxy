@@ -1,0 +1,3 @@
+D:/code/Clion/xmhxy/cmake-build-debug_android/CMakeFiles/xmhxy.dir
+D:/code/Clion/xmhxy/cmake-build-debug_android/CMakeFiles/edit_cache.dir
+D:/code/Clion/xmhxy/cmake-build-debug_android/CMakeFiles/rebuild_cache.dir
