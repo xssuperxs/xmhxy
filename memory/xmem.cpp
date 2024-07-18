@@ -74,10 +74,10 @@ std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int inc, int p
     }
     for (auto& fut : futures) {
        auto result =  fut.get();
-        foundAddress.insert(foundAddress.end(),result.begin(),result.end());
+       foundAddress.insert(foundAddress.end(),result.begin(),result.end());
     }
     std::cout << foundAddress.size() << std::endl;
-    return {};
+    return foundAddress;
 }
 
 
