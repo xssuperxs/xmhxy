@@ -81,12 +81,12 @@ clean: CMakeFiles/xmhxy.dir/clean
 CMakeFiles/xmhxy.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/xmhxy.dir/build.make CMakeFiles/xmhxy.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/xmhxy.dir/build.make CMakeFiles/xmhxy.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:/code/Clion/xmhxy/cmake-build-debug_android/CMakeFiles --progress-num=1,2 "Built target xmhxy"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:/code/Clion/xmhxy/cmake-build-debug_android/CMakeFiles --progress-num=1,2,3 "Built target xmhxy"
 .PHONY : CMakeFiles/xmhxy.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/xmhxy.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start D:/code/Clion/xmhxy/cmake-build-debug_android/CMakeFiles 2
+	$(CMAKE_COMMAND) -E cmake_progress_start D:/code/Clion/xmhxy/cmake-build-debug_android/CMakeFiles 3
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/xmhxy.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start D:/code/Clion/xmhxy/cmake-build-debug_android/CMakeFiles 0
 .PHONY : CMakeFiles/xmhxy.dir/rule

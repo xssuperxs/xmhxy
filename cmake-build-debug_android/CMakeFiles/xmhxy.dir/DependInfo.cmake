@@ -9,6 +9,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "D:/code/Clion/xmhxy/main.cpp" "CMakeFiles/xmhxy.dir/main.cpp.o" "gcc" "CMakeFiles/xmhxy.dir/main.cpp.o.d"
+  "D:/code/Clion/xmhxy/memory/xmem.cpp" "CMakeFiles/xmhxy.dir/memory/xmem.cpp.o" "gcc" "CMakeFiles/xmhxy.dir/memory/xmem.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

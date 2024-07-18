@@ -35,6 +35,8 @@ std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int inc, int p
     if (memRegions.empty())
         return {};
 
+
+    //MB = 576,143,360 / 1,048,576 = 503 MB
     // 内存总大小
     for (const auto &region: memRegions) {
         totalMemSize += region.MemorySize;
@@ -82,19 +84,21 @@ std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int inc, int p
 }
 
 
-void thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_REGION> &memRegions, size_t maxMemRegionSize, int startRegion, int stopRegion, const int *pArrayToFind, unsigned long nArrayToFindLength, std::vector<uintptr_t> *pFoundAddresses) {
+void thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_REGION> &memRegions, size_t maxMemRegionSize, int startRegion, int stopRegion, const int *pArrayToFind, size_t nArrayToFindLength, std::vector<uintptr_t> *pFoundAddresses) {
 
     // 实际读取的长度
     size_t actualRead = 0;
     // buffer's  size
     size_t bufferSize = maxMemRegionSize + 16 + nArrayToFindLength;
     bool isReadSuccess = false;
+    bool isFound = false;
     uintptr_t currentBase = 0;
     size_t currentRegionSize = 0;
 
+
     // 要分配最大的一个内存
     char *buffer = static_cast<char *>(malloc(bufferSize));
-    char *p = nullptr;
+    const char *p = nullptr;
     if (!buffer)
         return;
 //    memcpy(buffer + maxMemRegionSize + 16, pArrayToFind, nArrayToFindLength);
@@ -117,20 +121,17 @@ void thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_REGION> &memRegion
         p = buffer;
         // 从第一个字节 开始搜索
         for (int j = 0; j < actualRead; ++j) {
-
-            // 开始匹配 模式
-            for (int k = 0; k < nArrayToFindLength; ++k) {
-
-                if ((pArrayToFind[k]) != -1 && (int) (p[k]) != pArrayToFind[k]) {
-                    break;
-                }
-                // 在这果找到一个
+            if (arrayOfByteExact(p,pArrayToFind,nArrayToFindLength))
                 pFoundAddresses->push_back(currentBase + j);
-            }
             p++;
         }
     }
     free(buffer);
+
+    std::cout << pFoundAddresses->size() << std::endl;
+//    for (auto findAddress: *pFoundAddresses) {
+//        std::cout << std::hex << findAddress << std::endl;
+//    }
     std::cout << "thread is finished" << std::endl;
 }
 
@@ -147,7 +148,6 @@ std::vector<MEMORY_REGION> collectMemInfo(int pid, int protection, uint64_t star
     MEMORY_BASIC_INFORMATION mbi;
     bool validRegion = false;
     bool isWrite_execute_copy = false;
-
 
     if (start % 8 > 0)
         start -= start % 8;
@@ -172,8 +172,17 @@ std::vector<MEMORY_REGION> collectMemInfo(int pid, int protection, uint64_t star
         if (reinterpret_cast<uintptr_t>(mbi.BaseAddress) + mbi.RegionSize >= end) {
             mbi.RegionSize = end - reinterpret_cast<uintptr_t>(mbi.BaseAddress);
         }
+
         // 判断是不是有效内存
         validRegion = (mbi.State == MEM_COMMIT);
+        validRegion = validRegion && (reinterpret_cast<uintptr_t>(mbi.BaseAddress) < reinterpret_cast<uintptr_t>(end));
+        validRegion = validRegion && ((mbi.Protect & PAGE_GUARD) == 0);
+        validRegion = validRegion && ((mbi.Protect & PAGE_NOACCESS) == 0);
+
+        validRegion = validRegion && mbi.Type != MEM_MAPPED;
+        validRegion = validRegion && (mbi.Protect & PAGE_WRITECOMBINE) <= 0;
+
+
 
         if (protection == PAGE_READWRITE) {
             isWrite_execute_copy = ((mbi.Protect & PAGE_READWRITE) > 0) ||
@@ -329,7 +338,14 @@ auto getBitCount = [](uintptr_t value) {
     return cpuCount;
 }
 
-
+bool arrayOfByteExact(const char *buffer, const int *pArrayToFind, size_t nArrayLength) {
+    for (int i = 0; i < nArrayLength; ++i) {
+        if ((pArrayToFind[i]) != -1 && (int) (buffer[i]) != pArrayToFind[i]) {
+            return false; // no match
+        }
+    }
+    return true; // still here, so a match
+}
 
 // =================================================================  android 用的函数
 #ifdef __ANDROID_API__
@@ -420,6 +436,7 @@ uint32_t ProtectionStringToProtection(const std::string &protectionString) {
         ret = w ? PAGE_READWRITE : PAGE_READONLY;
     return ret;
 }
+
 
 
 #endif

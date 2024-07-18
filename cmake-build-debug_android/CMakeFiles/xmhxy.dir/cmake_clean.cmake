@@ -1,6 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/xmhxy.dir/main.cpp.o"
   "CMakeFiles/xmhxy.dir/main.cpp.o.d"
+  "CMakeFiles/xmhxy.dir/memory/xmem.cpp.o"
+  "CMakeFiles/xmhxy.dir/memory/xmem.cpp.o.d"
   "xmhxy"
   "xmhxy.manifest"
   "xmhxy.pdb"

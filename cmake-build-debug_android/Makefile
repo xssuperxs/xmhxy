@@ -153,6 +153,30 @@ main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/xmhxy.dir/build.make CMakeFiles/xmhxy.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+memory/xmem.o: memory/xmem.cpp.o
+.PHONY : memory/xmem.o
+
+# target to build an object file
+memory/xmem.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xmhxy.dir/build.make CMakeFiles/xmhxy.dir/memory/xmem.cpp.o
+.PHONY : memory/xmem.cpp.o
+
+memory/xmem.i: memory/xmem.cpp.i
+.PHONY : memory/xmem.i
+
+# target to preprocess a source file
+memory/xmem.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xmhxy.dir/build.make CMakeFiles/xmhxy.dir/memory/xmem.cpp.i
+.PHONY : memory/xmem.cpp.i
+
+memory/xmem.s: memory/xmem.cpp.s
+.PHONY : memory/xmem.s
+
+# target to generate assembly for a file
+memory/xmem.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xmhxy.dir/build.make CMakeFiles/xmhxy.dir/memory/xmem.cpp.s
+.PHONY : memory/xmem.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -165,6 +189,9 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... memory/xmem.o"
+	@echo "... memory/xmem.i"
+	@echo "... memory/xmem.s"
 .PHONY : help
 
 
