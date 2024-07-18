@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <string>
 #include <thread>
+#include <future>
 
 
 // ==================================================  android =====================================================
@@ -63,6 +64,7 @@ typedef struct {
 #define END_ADDRESS 0x00007fffffffffff
 #define PAGE_PROTECTION PAGE_READWRITE
 
+//  ================================================   public  ====================================================
 
 std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int inc = 0, int protection = PAGE_PROTECTION, uint64_t start = BEGIN_ADDRESS, uint64_t end = END_ADDRESS);
 
@@ -71,7 +73,7 @@ std::vector<MEMORY_REGION> collectMemInfo(int pid, int protection = PAGE_PROTECT
 // 转换文本到 byte数组  "0A 00 00 00 0A 00 00 00" 转换成数组
 std::vector<int> convertStringToBytes(const std::string &scanValue, char delimiter = ' ', bool hex = true);
 
-void thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_REGION> &memRegions, size_t maxMemRegionSize, int startRegion, int stopRegion, const int *pArrayToFind, size_t nArrayToFindLength, std::vector<uintptr_t> *pFoundAddresses);
+std::vector<uintptr_t> thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_REGION> &memRegions, size_t maxMemRegionSize, int startRegion, int stopRegion, const int *pArrayToFind, int nArrayToFindLength);
 
 unsigned long getCPUCount();
 

@@ -49,42 +49,39 @@ std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int inc, int p
                                       });
     maxRegionSize = maxRegion->MemorySize;
 
-
-    // 看看需要多少个线程 执行扫描任务
-
-//    32 * 1024 * 1024   32MB
-
-    size_t blockSize = 0;
-    unsigned long nThreadCount = totalMemSize >= 64 * 1024 * 1024 ? getCPUCount() : 1;
-
-    nThreadCount = 1;
+    size_t memRegionsCount = memRegions.size();
+    size_t blockSize = totalMemSize / 2;
+    size_t tmpBlockSize = 0;
 
 
-    // 构造每一个线程
-    scanThreads.emplace_back(thread_ScanMem, hProcess, memRegions, maxRegionSize, startRegion, memRegions.size(), pArrayToFind, arrayToFindLength, &foundAddress);
-//    scanThreads.emplace_back(thread_ScanMem, hProcess, memRegions, maxRegionSize, startRegion, stopRegion, pArrayToFind, arrayToFindLength, &foundAddress);
+    // 定义一个futures 对象
+    std::vector<std::future<std::vector<uintptr_t>>> futures;
 
+    for (int i = 0; i < memRegionsCount; i++) {
 
+        tmpBlockSize += memRegions[i].MemorySize;
 
-    // 等待线程结束
-    for (auto &thread: scanThreads) {
-        // Perform operations on each thread
-        // For example, join each thread
-        if (thread.joinable()) {
-            thread.join();
+        if (tmpBlockSize >= blockSize || i == memRegionsCount - 1) {
+            tmpBlockSize = 0;
+            stopRegion = i + 1;
+            futures.push_back(std::async(std::launch::async, thread_ScanMem, hProcess, memRegions, maxRegionSize, startRegion, stopRegion, pArrayToFind, arrayToFindLength));
+            startRegion = i + 1;
         }
-
-//        thread.detach();  分离线程
     }
-    // 查查 有多少个CPU 一个CPU 一个线程
-
-    // 起动线程扫描
-
+    // 等待所有的异步任务完成
+    for (auto& fut : futures) {
+        fut.wait();
+    }
+    for (auto& fut : futures) {
+       auto result =  fut.get();
+        foundAddress.insert(foundAddress.end(),result.begin(),result.end());
+    }
+    std::cout << foundAddress.size() << std::endl;
     return {};
 }
 
 
-void thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_REGION> &memRegions, size_t maxMemRegionSize, int startRegion, int stopRegion, const int *pArrayToFind, size_t nArrayToFindLength, std::vector<uintptr_t> *pFoundAddresses) {
+std::vector<uintptr_t> thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_REGION> &memRegions, size_t maxMemRegionSize, int startRegion, int stopRegion, const int *pArrayToFind, int nArrayToFindLength) {
 
     // 实际读取的长度
     size_t actualRead = 0;
@@ -94,14 +91,13 @@ void thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_REGION> &memRegion
     bool isFound = false;
     uintptr_t currentBase = 0;
     size_t currentRegionSize = 0;
-
+    std::vector<uintptr_t> foundAddresses;
 
     // 要分配最大的一个内存
     char *buffer = static_cast<char *>(malloc(bufferSize));
     const char *p = nullptr;
     if (!buffer)
-        return;
-//    memcpy(buffer + maxMemRegionSize + 16, pArrayToFind, nArrayToFindLength);
+        return {};
 
 //     循环扫描自己的区域 这是在线程中
     for (int i = startRegion; i < stopRegion; ++i) {
@@ -121,18 +117,15 @@ void thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_REGION> &memRegion
         p = buffer;
         // 从第一个字节 开始搜索
         for (int j = 0; j < actualRead; ++j) {
-            if (arrayOfByteExact(p,pArrayToFind,nArrayToFindLength))
-                pFoundAddresses->push_back(currentBase + j);
+            if (arrayOfByteExact(p, pArrayToFind, nArrayToFindLength)){
+                foundAddresses.push_back(currentBase + j);
+            }
             p++;
         }
     }
     free(buffer);
-
-    std::cout << pFoundAddresses->size() << std::endl;
-//    for (auto findAddress: *pFoundAddresses) {
-//        std::cout << std::hex << findAddress << std::endl;
-//    }
     std::cout << "thread is finished" << std::endl;
+    return foundAddresses;
 }
 
 std::vector<MEMORY_REGION> collectMemInfo(int pid, int protection, uint64_t start, uint64_t end) {
@@ -343,6 +336,9 @@ bool arrayOfByteExact(const char *buffer, const int *pArrayToFind, size_t nArray
         if ((pArrayToFind[i]) != -1 && (int) (buffer[i]) != pArrayToFind[i]) {
             return false; // no match
         }
+//        if ((pArrayToFind[nArrayLength-1]) != -1 && (int) (buffer[nArrayLength-1]) != pArrayToFind[nArrayLength-1]) {
+//            return false; // no match
+//        }
     }
     return true; // still here, so a match
 }
@@ -436,7 +432,6 @@ uint32_t ProtectionStringToProtection(const std::string &protectionString) {
         ret = w ? PAGE_READWRITE : PAGE_READONLY;
     return ret;
 }
-
 
 
 #endif
