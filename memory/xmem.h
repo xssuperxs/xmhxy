@@ -53,7 +53,8 @@ typedef struct {
     uintptr_t BaseAddress;
     uint64_t MemorySize;
     bool IsChild;       // Indicates if there is a region before it
-    void *startAddress; // Pointer to the start of this region in the whole memory copy
+    uintptr_t startAddress; // Pointer to the start of this region in the whole memory copy
+    uintptr_t stopAddress;
 } MEMORY_REGION;
 
 
