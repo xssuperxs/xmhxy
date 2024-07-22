@@ -221,8 +221,7 @@ std::vector<uintptr_t> thread_ScanMem_1(HANDLE hProcess, std::vector<MEMORY_REGI
         for (int j = 0; j < actualRead; ++j) {
             if (arrayOfByteExact(p, pArrayToFind, nArrayToFindLength)) {
 
-                std::cout << std::hex << memRegion.startAddress + j << std::endl;
-//                foundAddresses.push_back(memRegion.startAddress + j);
+                foundAddresses.push_back(memRegion.startAddress + j);
             }
             p++;
         }
