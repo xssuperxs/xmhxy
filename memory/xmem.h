@@ -76,13 +76,9 @@ std::vector<int> convertStringToBytes(const std::string &scanValue, char delimit
 
 std::vector<uintptr_t> thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_REGION> &memRegions, size_t maxMemRegionSize, int startRegion, int stopRegion, const int *pArrayToFind, int nArrayToFindLength);
 
+std::vector<uintptr_t> thread_ScanMem_1(HANDLE hProcess, std::vector<MEMORY_REGION> memRegions, size_t maxMemRegionSize, const int *pArrayToFind, int nArrayToFindLength);
 unsigned long getCPUCount();
 
 bool arrayOfByteExact(const char * buffer, const int * pArrayToFind,size_t nArrayLength);
-
-
-
-//DWORD AOBScan(HANDLE hProcess, const char *pattern, const char *mask, uint64_t start, uint64_t end, int inc, int protection, uint64_t *match_addr)
-
 
 #endif //XMHXY_XMEM_H

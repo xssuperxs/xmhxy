@@ -23,10 +23,11 @@ std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int inc, int p
     size_t DEFAULT_BLOCK_SIZE = 128 * 1024 * 1024; // 默认块在大小
     size_t currentBlockSize = 0;
     size_t currentMemRegionSize = 0;
+    size_t previousLeftMemSize = 0;
     unsigned long threadCount = getCPUCount();      // 获取可用的CPU线程
     unsigned long needThreadCount = 0;              // 获取可用的CPU线程
     unsigned long memRegionsCount = 0;
-    MEMORY_REGION currentMemoryRegion;
+    MEMORY_REGION tmpMemoryRegion;
     MEMORY_REGION leftMemoryRegion = {0};
 
     size_t subBlockCount;
@@ -62,47 +63,83 @@ std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int inc, int p
     for (int i = 0; i < memRegionsCount; i++) {
 
         currentMemRegionSize = memRegions[i].MemorySize;
-        currentBlockSize += memRegions[i].MemorySize;
+        currentBlockSize += currentMemRegionSize;
+        _startAddress = memRegions[i].BaseAddress;
 
-        if (i == 0)  // 第一块
-            _startAddress = memRegions[i].BaseAddress;
-        if (i == memRegionsCount - 1)   // 最后一块
-            _stopAddress = memRegions[i].stopAddress;
-
-        if (currentBlockSize < DEFAULT_BLOCK_SIZE) {
-            thread_memRegions.push_back(memRegions[i]);
-            continue;
+        // 如果有多余的一块
+        if (leftMemoryRegion.MemorySize > 0) {
+            currentBlockSize += leftMemoryRegion.MemorySize;
+            previousLeftMemSize = leftMemoryRegion.MemorySize;
+            thread_memRegions.push_back(leftMemoryRegion);
+            leftMemoryRegion.MemorySize = 0;
         }
-        // 获取右边的多的一块
-        leftMemoryRegion.MemorySize = currentBlockSize % DEFAULT_BLOCK_SIZE;
-        leftMemoryRegion.stopAddress = memRegions[i].stopAddress;
-        leftMemoryRegion.startAddress = memRegions[i].stopAddress - leftMemoryRegion.MemorySize;
 
-        subBlockCount = currentBlockSize / DEFAULT_BLOCK_SIZE;
+        // 小于默认块
+        if (currentBlockSize < DEFAULT_BLOCK_SIZE) {
+            tmpMemoryRegion.MemorySize = memRegions[i].MemorySize;
+            tmpMemoryRegion.startAddress =  memRegions[i].BaseAddress;
+            tmpMemoryRegion.stopAddress = memRegions[i].stopAddress;
+            thread_memRegions.push_back(tmpMemoryRegion);
 
-        for (int j = 0; j < subBlockCount; ++j) {
+            if (i == memRegionsCount - 1) {
+                // 这里起动最后一个线程
+                futures.push_back(std::async(std::launch::async, thread_ScanMem_1, hProcess, thread_memRegions, DEFAULT_BLOCK_SIZE, pArrayToFind, arrayToFindLength));
+                thread_memRegions.clear();
+            }
 
-            _stopAddress = _startAddress + DEFAULT_BLOCK_SIZE;
+        } else {     // 大于默认块
 
-            currentMemoryRegion.startAddress = _startAddress;;
-            currentMemoryRegion.stopAddress = _stopAddress;
-            currentMemoryRegion.MemorySize = DEFAULT_BLOCK_SIZE;
-            thread_memRegions.push_back(currentMemoryRegion);
-            // 在这里起动线程
-            futures.push_back(std::async(std::launch::async, thread_ScanMem, hProcess, memRegions, maxRegionSize, startRegion, stopRegion, pArrayToFind, arrayToFindLength));
-            thread_memRegions.clear();
-            _startAddress = _stopAddress;
+            // 大于默认块大小
+            leftMemoryRegion.MemorySize = currentBlockSize % DEFAULT_BLOCK_SIZE;
+            if (leftMemoryRegion.MemorySize > 0) {
+                leftMemoryRegion.stopAddress = memRegions[i].stopAddress;
+                leftMemoryRegion.startAddress = memRegions[i].stopAddress - leftMemoryRegion.MemorySize;
+            }
+            subBlockCount = currentBlockSize / DEFAULT_BLOCK_SIZE;
+
+            for (int j = 0; j < subBlockCount; ++j) {
+                if (previousLeftMemSize > 0) {
+                    _stopAddress = _startAddress + (DEFAULT_BLOCK_SIZE - previousLeftMemSize);
+                    tmpMemoryRegion.MemorySize = _stopAddress - _startAddress;
+                    previousLeftMemSize = 0;
+                } else {
+
+                    if (currentMemRegionSize - leftMemoryRegion.MemorySize >= 0) {
+                        _stopAddress = _startAddress + DEFAULT_BLOCK_SIZE;
+                        tmpMemoryRegion.MemorySize = DEFAULT_BLOCK_SIZE;
+                    } else {
+                        _stopAddress = _startAddress + (_stopAddress - leftMemoryRegion.MemorySize);
+                        tmpMemoryRegion.MemorySize = _stopAddress - leftMemoryRegion.MemorySize - _startAddress;
+                    }
+                }
+                tmpMemoryRegion.startAddress = _startAddress;;
+                tmpMemoryRegion.stopAddress = _stopAddress;
+                thread_memRegions.push_back(tmpMemoryRegion);
+
+                // 在这里起动线程
+                futures.push_back(std::async(std::launch::async, thread_ScanMem_1, hProcess, thread_memRegions, DEFAULT_BLOCK_SIZE, pArrayToFind, arrayToFindLength));
+                thread_memRegions.clear();
+                _startAddress = _stopAddress;
+            }
+            previousLeftMemSize = leftMemoryRegion.MemorySize;
             currentBlockSize = 0;
         }
-        // 等待所有的异步任务完成
-        for (auto &fut: futures) {
-            fut.wait();
-        }
-        for (auto &fut: futures) {
-            auto result = fut.get();
-            foundAddress.insert(foundAddress.end(), result.begin(), result.end());
-        }
     }
+    // 等待所有的异步任务完成
+    for (auto &fut: futures) {
+        fut.wait();
+    }
+    for (auto &fut: futures) {
+        auto result = fut.get();
+        foundAddress.insert(foundAddress.end(), result.begin(), result.end());
+    }
+
+    std::cout << foundAddress.size() << std::endl;
+
+    for (auto addr: foundAddress) {
+        std::cout << std::hex << addr << std::endl;
+    }
+    std::cout << std::hex << foundAddress.size() << std::endl;
     return foundAddress;
 }
 
@@ -152,6 +189,47 @@ std::vector<uintptr_t> thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_
     free(buffer);
     std::cout << "thread is finished" << std::endl;
     return foundAddresses;
+}
+
+
+std::vector<uintptr_t> thread_ScanMem_1(HANDLE hProcess, std::vector<MEMORY_REGION> memRegions, size_t maxMemRegionSize, const int *pArrayToFind, int nArrayToFindLength) {
+
+    // 实际读取的长度
+    size_t actualRead = 0;
+    size_t bufferSize = maxMemRegionSize + 16 + nArrayToFindLength;
+    bool isReadSuccess;
+    std::vector<uintptr_t> foundAddresses;
+
+    // 要分配最大的一个内存
+    char *buffer = static_cast<char *>(malloc(bufferSize));
+    const char *p;
+    if (!buffer)
+        return foundAddresses;
+
+    for (auto memRegion: memRegions) {
+
+        buffer = static_cast<char *>(realloc(buffer, bufferSize));
+
+        // 读入内存到BUFF中
+        isReadSuccess = ReadProcessMemory(hProcess, (void *) memRegion.startAddress, buffer, memRegion.MemorySize, &actualRead);
+
+        if (!isReadSuccess)
+            continue;
+
+        p = buffer;
+        // 从第一个字节 开始搜索
+        for (int j = 0; j < actualRead; ++j) {
+            if (arrayOfByteExact(p, pArrayToFind, nArrayToFindLength)) {
+
+                std::cout << std::hex << memRegion.startAddress + j << std::endl;
+//                foundAddresses.push_back(memRegion.startAddress + j);
+            }
+            p++;
+        }
+    }
+    free(buffer);
+    return foundAddresses;
+
 }
 
 std::vector<MEMORY_REGION> collectMemInfo(int pid, int protection, uint64_t start, uint64_t end) {
@@ -418,7 +496,7 @@ bool ReadProcessMemory(HANDLE hProcess, const void *lpBaseAddress, void *lpBuffe
     long ret = syscall(__NR_process_vm_readv, hProcess, &local, 1, &remote, 1, 0);
 
     if (ret == -1) {
-        std::cout << "SYS_process_vm_read error! = " << strerror(errno);
+        std::cout << "SYS_process_vm_read error! = " << strerror(errno) << std::hex << lpBaseAddress << std::endl;
         return false;
     }
     if (lpNumberOfBytesRead)
