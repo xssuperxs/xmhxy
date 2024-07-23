@@ -192,7 +192,7 @@ std::vector<uintptr_t> thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_
 }
 
 
-std::vector<uintptr_t> thread_ScanMem_1(HANDLE hProcess, std::vector<MEMORY_REGION> memRegions, size_t maxMemRegionSize, const int *pArrayToFind, int nArrayToFindLength) {
+std::vector<uintptr_t> thread_ScanMem(HANDLE hProcess, std::vector<MEMORY_REGION> memRegions, size_t maxMemRegionSize, const int *pArrayToFind, int nArrayToFindLength) {
 
     // 实际读取的长度
     size_t actualRead = 0;
@@ -220,7 +220,6 @@ std::vector<uintptr_t> thread_ScanMem_1(HANDLE hProcess, std::vector<MEMORY_REGI
         // 从第一个字节 开始搜索
         for (int j = 0; j < actualRead; ++j) {
             if (arrayOfByteExact(p, pArrayToFind, nArrayToFindLength)) {
-
                 foundAddresses.push_back(memRegion.startAddress + j);
             }
             p++;
