@@ -83,7 +83,7 @@ std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int inc, int p
 
             if (i == memRegionsCount - 1) {
                 // 这里起动最后一个线程
-                futures.push_back(std::async(std::launch::async, thread_ScanMem_1, hProcess, thread_memRegions, DEFAULT_BLOCK_SIZE, pArrayToFind, arrayToFindLength));
+                futures.push_back(std::async(std::launch::async, thread_ScanMem, hProcess, thread_memRegions, DEFAULT_BLOCK_SIZE, pArrayToFind, arrayToFindLength));
                 thread_memRegions.clear();
             }
 
@@ -117,7 +117,7 @@ std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int inc, int p
                 thread_memRegions.push_back(tmpMemoryRegion);
 
                 // 在这里起动线程
-                futures.push_back(std::async(std::launch::async, thread_ScanMem_1, hProcess, thread_memRegions, DEFAULT_BLOCK_SIZE, pArrayToFind, arrayToFindLength));
+                futures.push_back(std::async(std::launch::async, thread_ScanMem, hProcess, thread_memRegions, DEFAULT_BLOCK_SIZE, pArrayToFind, arrayToFindLength));
                 thread_memRegions.clear();
                 _startAddress = _stopAddress;
             }
@@ -141,54 +141,6 @@ std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int inc, int p
     }
     std::cout << std::hex << foundAddress.size() << std::endl;
     return foundAddress;
-}
-
-
-std::vector<uintptr_t> thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_REGION> &memRegions, size_t maxMemRegionSize, int startRegion, int stopRegion, const int *pArrayToFind, int nArrayToFindLength) {
-
-    // 实际读取的长度
-    size_t actualRead = 0;
-    // buffer's  size
-    size_t bufferSize = maxMemRegionSize + 16 + nArrayToFindLength;
-    bool isReadSuccess = false;
-    bool isFound = false;
-    uintptr_t currentBase = 0;
-    size_t currentRegionSize = 0;
-    std::vector<uintptr_t> foundAddresses;
-
-    // 要分配最大的一个内存
-    char *buffer = static_cast<char *>(malloc(bufferSize));
-    const char *p = nullptr;
-    if (!buffer)
-        return {};
-
-//     循环扫描自己的区域 这是在线程中
-    for (int i = startRegion; i < stopRegion; ++i) {
-
-        currentBase = memRegions.at(i).BaseAddress;
-        currentRegionSize = memRegions.at(i).MemorySize;
-
-#ifdef __ANDROID_API__
-        buffer = static_cast<char *>(realloc(buffer, bufferSize));
-#endif
-        // 读入内存到BUFF中
-        isReadSuccess = ReadProcessMemory(hProcess, (void *) currentBase, buffer, currentRegionSize, &actualRead);
-
-        if (!isReadSuccess)
-            continue;
-
-        p = buffer;
-        // 从第一个字节 开始搜索
-        for (int j = 0; j < actualRead; ++j) {
-            if (arrayOfByteExact(p, pArrayToFind, nArrayToFindLength)) {
-                foundAddresses.push_back(currentBase + j);
-            }
-            p++;
-        }
-    }
-    free(buffer);
-    std::cout << "thread is finished" << std::endl;
-    return foundAddresses;
 }
 
 

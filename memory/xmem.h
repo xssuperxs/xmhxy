@@ -74,8 +74,6 @@ std::vector<MEMORY_REGION> collectMemInfo(int pid, int protection = PAGE_PROTECT
 // 转换文本到 byte数组  "0A 00 00 00 0A 00 00 00" 转换成数组
 std::vector<int> convertStringToBytes(const std::string &scanValue, char delimiter = ' ', bool hex = true);
 
-std::vector<uintptr_t> thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_REGION> &memRegions, size_t maxMemRegionSize, int startRegion, int stopRegion, const int *pArrayToFind, int nArrayToFindLength);
-
 std::vector<uintptr_t> thread_ScanMem(HANDLE hProcess, std::vector<MEMORY_REGION> memRegions, size_t maxMemRegionSize, const int *pArrayToFind, int nArrayToFindLength);
 unsigned long getCPUCount();
 
