@@ -17,6 +17,7 @@ std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int offset, co
 //    size_t pageSize = 0;
     std::vector<MEMORY_REGION> thread_memRegions;
     size_t DEFAULT_BLOCK_SIZE = 128 * 1024 * 1024; // 默认块在大小
+//    size_t DEFAULT_BLOCK_SIZE = 128 * 1024 * 1024; // 默认块在大小
     size_t currentBlockSize = 0;
     size_t currentMemRegionSize;
     size_t previousLeftMemSize = 0;
@@ -80,6 +81,7 @@ std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int offset, co
                 // 这里起动最后一个线程
                 futures.push_back(std::async(std::launch::async, thread_ScanMem, hProcess, thread_memRegions, DEFAULT_BLOCK_SIZE, pArrayToFind, arrayToFindLength,offset));
                 thread_memRegions.clear();
+                break;
             }
 
         } else {     // 大于默认块
@@ -131,7 +133,7 @@ std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int offset, co
     for (auto addr: foundAddress) {
         std::cout << std::hex << addr << std::endl;
     }
-    std::cout << foundAddress.size() << std::endl;
+    std::cout << std::dec << foundAddress.size() << std::endl;
     return foundAddress;
 }
 
