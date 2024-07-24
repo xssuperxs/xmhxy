@@ -63,19 +63,20 @@ typedef struct {
 //  ================================================   const  ====================================================
 #define BEGIN_ADDRESS 0
 #define END_ADDRESS 0x00007fffffffffff
-#define PAGE_PROTECTION PAGE_READWRITE
+#define PAGE_PROTECTION "rw"
 
 //  ================================================   public  ====================================================
 
-std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int inc = 0, int protection = PAGE_PROTECTION, uint64_t start = BEGIN_ADDRESS, uint64_t end = END_ADDRESS);
+std::vector<uintptr_t> searchMemory(int pid, const char *pattern, int offset = 0, const char *szProtection = PAGE_PROTECTION, uint64_t start = BEGIN_ADDRESS, uint64_t end = END_ADDRESS);
 
-std::vector<MEMORY_REGION> collectMemInfo(int pid, int protection = PAGE_PROTECTION, uint64_t start = BEGIN_ADDRESS, uint64_t end = END_ADDRESS);
+std::vector<MEMORY_REGION> collectMemInfo(int pid, const char *szProtect = "rw", uint64_t start = BEGIN_ADDRESS, uint64_t end = END_ADDRESS);
+
 
 // 转换文本到 byte数组  "0A 00 00 00 0A 00 00 00" 转换成数组
 std::vector<int> convertStringToBytes(const std::string &scanValue, char delimiter = ' ', bool hex = true);
 
-std::vector<uintptr_t> thread_ScanMem(HANDLE hProcess, std::vector<MEMORY_REGION> memRegions, size_t maxMemRegionSize, const int *pArrayToFind, int nArrayToFindLength);
-unsigned long getCPUCount();
+std::vector<uintptr_t> thread_ScanMem(HANDLE hProcess, const std::vector<MEMORY_REGION>& memRegions, size_t maxMemRegionSize, const int *pArrayToFind, int nArrayToFindLength,int offset = 0);
+//unsigned long getCPUCount();
 
 bool arrayOfByteExact(const char * buffer, const int * pArrayToFind,size_t nArrayLength);
 
